@@ -1,24 +1,19 @@
-use std::env;
-use std::io::{self, Read};
+use std::{env, fs};
 
 mod one;
 mod two;
+mod three;
 
-fn get_stdin() -> String {
-    let mut buffer = String::new();
-    match io::stdin().read_to_string(&mut buffer) {
-        Err(e) => println!("Error encountered: {}", e),
-        _ => (),
-    }
-    return buffer
+fn get_input(filename: &str) -> String {
+    let err = format!("Error: could not read file with filename {}.", filename);
+    fs::read_to_string(filename).expect(&err)
 }
 
 fn call_from_str(s: &str) {
-    let input = get_stdin();
-
     match s {
-        "one" => one::start(&input),
-        "two" => two::start(&input),
+        "one" => one::start(&get_input("inputs/one")),
+        "two" => two::start(&get_input("inputs/two")),
+        "three" => three::start(&get_input("inputs/three")),
         _ => println!("No matching function"),
     }
 }
