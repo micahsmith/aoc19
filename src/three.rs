@@ -8,12 +8,9 @@ pub fn start(input: &str) {
     let wire_one_pm = get_point_map(&wire_one);
     let wire_two_pm = get_point_map(&wire_two);
 
-    let wire_one_ps = get_point_map(&wire_one);
-    let wire_two_ps = get_point_map(&wire_two);
-
-    let is: HashSet<&Point> = wire_one_ps.intersection(&wire_two_ps).collect();
-    get_min_mh_distance(&is);
-    get_min_step_distance(&wire_one, &wire_two, &is);
+    let intersection = get_map_key_intersection(&wire_one_pm, &wire_two_pm);
+    get_min_mh_distance(&intersection);
+    get_min_step_distance(&wire_one_pm, &wire_two_pm, &intersection);
 }
 
 fn format_input(input: &str) -> (Vec<Instruction>, Vec<Instruction>) {
@@ -58,7 +55,7 @@ fn get_direction(dir_char: &str) -> Direction {
     }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 struct Point {
     x: i32,
     y: i32,
@@ -67,36 +64,43 @@ struct Point {
 fn get_point_map(wire: &Vec<Instruction>) -> HashMap<Point, u32> {
     let mut point_map: HashMap<Point, u32> = HashMap::new();
 
+    let mut steps = 0;
     let mut x = 0;
     let mut y = 0;
 
     for instruction in wire.iter() {
-        for step_num in 0..instruction.distance {
+        for _ in 0..instruction.distance {
             match instruction.direction {
-                Direction::Up => {
-                    y = y + 1;
-                    point_map.entry(Point { x, y }).or_insert(step_num);
-                }
-                Direction::Down => {
-                    y = y - 1;
-                    point_map.entry(Point { x, y }).or_insert(step_num);
-                }
-                Direction::Left => {
-                    x = x - 1;
-                    point_map.entry(Point { x, y }).or_insert(step_num);
-                }
-                Direction::Right => {
-                    x = x + 1;
-                    point_map.entry(Point { x, y }).or_insert(step_num);
-                }
+                Direction::Up => y = y + 1,
+                Direction::Down => y = y - 1,
+                Direction::Left => x = x - 1,
+                Direction::Right => x = x + 1,
             }
+
+            steps += 1;
+            point_map.entry(Point { x, y }).or_insert(steps);
         }
     }
 
-    point_map
+    return point_map;
 }
 
-fn get_min_mh_distance(ps: &HashSet<&Point>) {
+fn get_map_key_intersection(
+    one: &HashMap<Point, u32>,
+    two: &HashMap<Point, u32>,
+) -> HashSet<Point> {
+    let mut hs: HashSet<Point> = HashSet::new();
+
+    for key in one.keys() {
+        if two.contains_key(key) {
+            hs.insert(key.clone());
+        }
+    }
+
+    return hs;
+}
+
+fn get_min_mh_distance(ps: &HashSet<Point>) {
     let min = ps
         .iter()
         .map(|point| point.x.abs() + point.y.abs())
@@ -106,11 +110,22 @@ fn get_min_mh_distance(ps: &HashSet<&Point>) {
 }
 
 fn get_min_step_distance(
-    wire_one: &Vec<Instruction>,
-    wire_two: &Vec<Instruction>,
-    ps: &HashSet<&Point>,
+    wire_one_hm: &HashMap<Point, u32>,
+    wire_two_hm: &HashMap<Point, u32>,
+    ps: &HashSet<Point>,
 ) {
+    let mut smallest = std::u32::MAX;
+
     for point in ps.iter() {
         println!("{:?}", point);
+        println!("{:?}", wire_one_hm.get(point).unwrap());
+        println!("{:?}", wire_two_hm.get(point).unwrap());
+        println!("{:?}", smallest);
+        let sum = wire_one_hm.get(point).unwrap() + wire_two_hm.get(point).unwrap();
+        if sum < smallest {
+            smallest = sum;
+        }
     }
+
+    println!("Smallest steps: {}", smallest);
 }
