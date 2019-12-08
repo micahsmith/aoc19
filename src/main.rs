@@ -1,8 +1,9 @@
 use std::{env, fs};
 
+mod four;
 mod one;
-mod two;
 mod three;
+mod two;
 
 fn get_input(filename: &str) -> String {
     let err = format!("Error: could not read file with filename {}.", filename);
@@ -14,6 +15,7 @@ fn call_from_str(s: &str) {
         "one" => one::start(&get_input("inputs/one")),
         "two" => two::start(&get_input("inputs/two")),
         "three" => three::start(&get_input("inputs/three")),
+        "four" => four::start(),
         _ => println!("No matching function"),
     }
 }
