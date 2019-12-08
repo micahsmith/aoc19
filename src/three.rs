@@ -23,16 +23,16 @@ fn format_input(input: &str) -> (Vec<Instruction>, Vec<Instruction>) {
     (formatted.remove(0), formatted.remove(0))
 }
 
+struct Instruction {
+    direction: Direction,
+    distance: u32,
+}
+
 enum Direction {
     Up,
     Down,
     Left,
     Right,
-}
-
-struct Instruction {
-    direction: Direction,
-    distance: u32,
 }
 
 fn format_wire(wire: &str) -> Vec<Instruction> {
@@ -77,6 +77,8 @@ fn get_point_map(wire: &Vec<Instruction>) -> HashMap<Point, u32> {
                 Direction::Right => x = x + 1,
             }
 
+            // NB: We only track the smallest number of steps to a particular point, and
+            // do not store any information in the case that a line crosses itself.
             steps += 1;
             point_map.entry(Point { x, y }).or_insert(steps);
         }
@@ -100,8 +102,8 @@ fn get_map_key_intersection(
     return hs;
 }
 
-fn get_min_mh_distance(ps: &HashSet<Point>) {
-    let min = ps
+fn get_min_mh_distance(point_set: &HashSet<Point>) {
+    let min = point_set
         .iter()
         .map(|point| point.x.abs() + point.y.abs())
         .fold(std::i32::MAX, |acc, v| cmp::min(acc, v));
@@ -112,20 +114,16 @@ fn get_min_mh_distance(ps: &HashSet<Point>) {
 fn get_min_step_distance(
     wire_one_hm: &HashMap<Point, u32>,
     wire_two_hm: &HashMap<Point, u32>,
-    ps: &HashSet<Point>,
+    point_set: &HashSet<Point>,
 ) {
-    let mut smallest = std::u32::MAX;
+    let mut min = std::u32::MAX;
 
-    for point in ps.iter() {
-        println!("{:?}", point);
-        println!("{:?}", wire_one_hm.get(point).unwrap());
-        println!("{:?}", wire_two_hm.get(point).unwrap());
-        println!("{:?}", smallest);
+    for point in point_set.iter() {
         let sum = wire_one_hm.get(point).unwrap() + wire_two_hm.get(point).unwrap();
-        if sum < smallest {
-            smallest = sum;
+        if sum < min {
+            min = sum;
         }
     }
 
-    println!("Smallest steps: {}", smallest);
+    println!("Minimum step count: {}", min);
 }
