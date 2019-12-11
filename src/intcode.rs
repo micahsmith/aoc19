@@ -1,6 +1,8 @@
+use std::io::stdin;
+
 #[derive(Clone, Debug)]
 pub struct IntCodeProgram {
-    program: Vec<u32>,
+    program: Vec<i32>,
 }
 
 impl IntCodeProgram {
@@ -10,17 +12,17 @@ impl IntCodeProgram {
                 .trim()
                 .split(',')
                 .map(|num| {
-                    return num.parse::<u32>().unwrap();
+                    return num.parse::<i32>().unwrap();
                 })
                 .collect(),
         }
     }
 
-    pub fn set_at(&mut self, idx: usize, value: u32) {
+    pub fn set_at(&mut self, idx: usize, value: i32) {
         self.program[idx] = value;
     }
 
-    pub fn get(&self, idx: usize) -> u32 {
+    pub fn get(&self, idx: usize) -> i32 {
         return self.program[idx];
     }
 
@@ -28,29 +30,62 @@ impl IntCodeProgram {
         let mut idx = 0;
 
         loop {
-            match self.program[idx] {
-                1 => self.opcode_one(idx),
-                2 => self.opcode_two(idx),
+            let (opcode, p_one, p_two, p_three) = self.get_opcode_and_parameters(idx);
+            match opcode {
+                1 => self.opcode_one(&mut idx, p_one, p_two, p_three),
+                2 => self.opcode_two(&mut idx, p_one, p_two, p_three),
+                3 => self.opcode_three(&mut idx, p_one),
+                4 => self.opcode_four(&mut idx, p_one),
                 99 => break,
                 _ => panic!("Unknown opcode: {}", self.program[idx]),
             }
-            idx += 4;
+        }
+    }
+
+    fn opcode_one(&mut self, idx: &mut usize, one: i32, two: i32, three: i32) {
+        self.program[three as usize] = one + two;
+        *idx += 4;
+    }
+
+    fn opcode_two(&mut self, idx: &mut usize, one: i32, two: i32, three: i32) {
+        self.program[three as usize] = one * two;
+        *idx += 4;
+    }
+
+    fn opcode_three(&mut self, idx: &mut usize, one: i32) {
+        let mut s = String::new();
+        stdin().read_line(&mut s).unwrap();
+
+        self.program[one as usize] = s.trim().parse::<i32>().unwrap();
+        *idx += 2;
+    }
+
+    fn opcode_four(&mut self, idx: &mut usize, one: i32) {
+        println!("{}", self.program[one as usize]);
+        *idx += 2;
+    }
+
+    fn get_opcode_and_parameters(&self, idx: usize) -> (i32, i32, i32, i32) {
+        let mut digits: [u32; 5] = [0; 5];
+
+        let oc_str = self.program[idx].to_string();
+        for (i, c) in oc_str.char_indices().rev() {
+            digits[i] = c.to_digit(10).unwrap();
         }
 
-        return;
+        return (
+            (digits[0] + digits[1] * 10) as i32,
+            self.get_parameter_from_mode(idx + 1, digits[2]),
+            self.get_parameter_from_mode(idx + 2, digits[3]),
+            self.get_parameter_from_mode(idx + 3, digits[4]),
+        );
     }
 
-    fn opcode_one(&mut self, idx: usize) {
-        let input_one = self.program[idx + 1] as usize;
-        let input_two = self.program[idx + 2] as usize;
-        let output_pos = self.program[idx + 3] as usize;
-        self.program[output_pos] = self.program[input_one] + self.program[input_two];
-    }
-
-    fn opcode_two(&mut self, idx: usize) {
-        let input_one = self.program[idx + 1] as usize;
-        let input_two = self.program[idx + 2] as usize;
-        let output_pos = self.program[idx + 3] as usize;
-        self.program[output_pos] = self.program[input_one] * self.program[input_two];
+    fn get_parameter_from_mode(&self, idx: usize, mode: u32) -> i32 {
+        match mode {
+            0 => self.program[self.program[idx] as usize],
+            1 => self.program[idx],
+            _ => panic!("Unknown parameter mode: {}", mode),
+        }
     }
 }

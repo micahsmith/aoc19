@@ -1,3 +1,8 @@
+use crate::intcode::IntCodeProgram;
+
 pub fn start(input: &str) {
-    println!("{}", input);
+    let mut program = IntCodeProgram::from_input(&input);
+    println!("{:?}", program);
+
+    program.run();
 }
