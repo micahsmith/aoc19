@@ -31,8 +31,6 @@ impl IntCodeProgram {
 
         loop {
             let (opcode, p_one, p_two, p_three) = self.get_opcode_and_parameters(idx);
-            println!("{:?}", self.program);
-            println!("{:?}", (opcode, p_one, p_two, p_three));
             match opcode {
                 1 => self.opcode_one(&mut idx, p_one, p_two, p_three),
                 2 => self.opcode_two(&mut idx, p_one, p_two, p_three),
@@ -42,33 +40,32 @@ impl IntCodeProgram {
                 _ => panic!("Unknown opcode: {}", self.program[idx]),
             }
         }
-        println!("after break");
     }
 
-    fn opcode_one(&mut self, idx: &mut usize, one: i32, two: i32, three: i32) {
-        self.program[three as usize] = one + two;
+    fn opcode_one(&mut self, idx: &mut usize, one: usize, two: usize, three: usize) {
+        self.program[three] = self.program[one] + self.program[two];
         *idx += 4;
     }
 
-    fn opcode_two(&mut self, idx: &mut usize, one: i32, two: i32, three: i32) {
-        self.program[three as usize] = one * two;
+    fn opcode_two(&mut self, idx: &mut usize, one: usize, two: usize, three: usize) {
+        self.program[three] = self.program[one] * self.program[two];
         *idx += 4;
     }
 
-    fn opcode_three(&mut self, idx: &mut usize, one: i32) {
+    fn opcode_three(&mut self, idx: &mut usize, one: usize) {
         let mut s = String::new();
         stdin().read_line(&mut s).unwrap();
 
-        self.program[one as usize] = s.trim().parse::<i32>().unwrap();
+        self.program[one] = s.trim().parse::<i32>().unwrap();
         *idx += 2;
     }
 
-    fn opcode_four(&mut self, idx: &mut usize, one: i32) {
-        println!("{}", self.program[one as usize]);
+    fn opcode_four(&mut self, idx: &mut usize, one: usize) {
+        println!("{}", self.program[one]);
         *idx += 2;
     }
 
-    fn get_opcode_and_parameters(&self, idx: usize) -> (i32, i32, i32, i32) {
+    fn get_opcode_and_parameters(&self, idx: usize) -> (i32, usize, usize, usize) {
         let mut digits: [u32; 5] = [0; 5];
 
         let oc_str = self.program[idx].to_string();
@@ -78,16 +75,16 @@ impl IntCodeProgram {
 
         return (
             (digits[0] + digits[1] * 10) as i32,
-            self.get_parameter_from_mode(digits[2], idx + 1),
-            self.get_parameter_from_mode(digits[3], idx + 2),
-            self.get_parameter_from_mode(digits[4], idx + 3),
+            self.get_index_from_mode(digits[2], idx + 1),
+            self.get_index_from_mode(digits[3], idx + 2),
+            self.get_index_from_mode(digits[4], idx + 3),
         );
     }
 
-    fn get_parameter_from_mode(&self, mode: u32, idx: usize) -> i32 {
+    fn get_index_from_mode(&self, mode: u32, idx: usize) -> usize {
         match mode {
-            0 => self.program[self.program[idx] as usize],
-            1 => self.program[idx],
+            0 => self.program[idx] as usize,
+            1 => idx,
             _ => panic!("Unknown parameter mode: {}", mode),
         }
     }
