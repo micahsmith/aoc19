@@ -37,7 +37,7 @@ impl IntCodeProgram {
                 3 => self.opcode_three(&mut idx, p_one),
                 4 => self.opcode_four(&mut idx, p_one),
                 99 => break,
-                _ => panic!("Unknown opcode: {}", self.program[idx]),
+                _ => panic!("Unknown opcode: {}", opcode),
             }
         }
     }
@@ -61,16 +61,18 @@ impl IntCodeProgram {
     }
 
     fn opcode_four(&mut self, idx: &mut usize, one: usize) {
-        println!("{}", self.program[one]);
+        println!("output: {}", self.program[one]);
         *idx += 2;
     }
 
     fn get_opcode_and_parameters(&self, idx: usize) -> (i32, usize, usize, usize) {
         let mut digits: [u32; 5] = [0; 5];
-
         let oc_str = self.program[idx].to_string();
-        for (i, c) in oc_str.char_indices().rev() {
+
+        let mut i = 0;
+        for c in oc_str.chars().rev() {
             digits[i] = c.to_digit(10).unwrap();
+            i += 1;
         }
 
         return (
