@@ -89,7 +89,7 @@ impl IntCodeProgram {
     }
 
     fn opcode_seven(&mut self, idx: &mut usize, one: usize, two: usize, three: usize) {
-        if self.program[one] > self.program[two] {
+        if self.program[one] < self.program[two] {
             self.program[three] = 1;
         } else {
             self.program[three] = 0;
