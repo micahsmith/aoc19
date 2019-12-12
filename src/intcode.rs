@@ -31,6 +31,8 @@ impl IntCodeProgram {
 
         loop {
             let (opcode, p_one, p_two, p_three) = self.get_opcode_and_parameters(idx);
+            println!("{:?}", self.program);
+            println!("{:?}", (opcode, p_one, p_two, p_three));
             match opcode {
                 1 => self.opcode_one(&mut idx, p_one, p_two, p_three),
                 2 => self.opcode_two(&mut idx, p_one, p_two, p_three),
@@ -40,6 +42,7 @@ impl IntCodeProgram {
                 _ => panic!("Unknown opcode: {}", self.program[idx]),
             }
         }
+        println!("after break");
     }
 
     fn opcode_one(&mut self, idx: &mut usize, one: i32, two: i32, three: i32) {
@@ -75,13 +78,13 @@ impl IntCodeProgram {
 
         return (
             (digits[0] + digits[1] * 10) as i32,
-            self.get_parameter_from_mode(idx + 1, digits[2]),
-            self.get_parameter_from_mode(idx + 2, digits[3]),
-            self.get_parameter_from_mode(idx + 3, digits[4]),
+            self.get_parameter_from_mode(digits[2], idx + 1),
+            self.get_parameter_from_mode(digits[3], idx + 2),
+            self.get_parameter_from_mode(digits[4], idx + 3),
         );
     }
 
-    fn get_parameter_from_mode(&self, idx: usize, mode: u32) -> i32 {
+    fn get_parameter_from_mode(&self, mode: u32, idx: usize) -> i32 {
         match mode {
             0 => self.program[self.program[idx] as usize],
             1 => self.program[idx],
