@@ -1,9 +1,14 @@
 use std::{env, fs};
 
+mod eight;
 mod five;
 mod four;
 mod intcode;
+mod nine;
 mod one;
+mod seven;
+mod six;
+mod ten;
 mod three;
 mod two;
 
@@ -19,6 +24,11 @@ fn call_from_str(s: &str) {
         "three" => three::start(&get_input("inputs/three")),
         "four" => four::start(),
         "five" => five::start(&get_input("inputs/five")),
+        "six" => six::start(&get_input("inputs/six")),
+        "seven" => seven::start(&get_input("inputs/seven")),
+        "eight" => eight::start(&get_input("inputs/eight")),
+        "nine" => nine::start(&get_input("inputs/nine")),
+        "ten" => ten::start(&get_input("inputs/ten")),
         _ => println!("No matching function"),
     }
 }
