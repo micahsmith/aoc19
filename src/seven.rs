@@ -1,3 +1,5 @@
+use crate::intcode::IntCodeProgram;
+
 pub fn start(input: &str) {
-    println!("{}", input);
+    IntCodeProgram::from_input(&input).run();
 }

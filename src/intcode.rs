@@ -1,8 +1,8 @@
-use std::io::stdin;
-
 #[derive(Clone, Debug)]
 pub struct IntCodeProgram {
     program: Vec<i32>,
+    pub in_buf: Vec<i32>,
+    pub out_buf: Vec<i32>,
 }
 
 impl IntCodeProgram {
@@ -15,6 +15,8 @@ impl IntCodeProgram {
                     return num.parse::<i32>().unwrap();
                 })
                 .collect(),
+            in_buf: Vec::new(),
+            out_buf: Vec::new(),
         }
     }
 
@@ -31,9 +33,9 @@ impl IntCodeProgram {
 
         loop {
             let (opcode, p_one, p_two, p_three) = self.get_opcode_and_parameters(idx);
-            println!("{:?}", self.program);
-            println!("{:?}", idx);
-            println!("{:?}", (opcode, p_one, p_two, p_three));
+            // println!("{:?}", self.program);
+            // println!("{:?}", idx);
+            // println!("{:?}", (opcode, p_one, p_two, p_three));
             match opcode {
                 1 => self.opcode_one(&mut idx, p_one, p_two, p_three),
                 2 => self.opcode_two(&mut idx, p_one, p_two, p_three),
@@ -60,15 +62,12 @@ impl IntCodeProgram {
     }
 
     fn opcode_three(&mut self, idx: &mut usize, one: usize) {
-        let mut s = String::new();
-        stdin().read_line(&mut s).unwrap();
-
-        self.program[one] = s.trim().parse::<i32>().unwrap();
+        self.program[one] = *self.in_buf.first().unwrap();
         *idx += 2;
     }
 
     fn opcode_four(&mut self, idx: &mut usize, one: usize) {
-        println!("output: {}", self.program[one]);
+        self.out_buf.push(self.program[one]);
         *idx += 2;
     }
 
@@ -126,8 +125,13 @@ impl IntCodeProgram {
 
     fn get_index_from_mode(&self, mode: u32, idx: usize) -> usize {
         match mode {
-            0 => self.program[idx] as usize,
-            1 => idx,
+            0 => {
+                if let Some(v) = self.program.get(idx) {
+                    return (*v) as usize;
+                }
+                return 0 as usize;
+            }
+            1 => return idx,
             _ => panic!("Unknown parameter mode: {}", mode),
         }
     }
