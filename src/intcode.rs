@@ -114,7 +114,7 @@ impl IntCodeProgram {
         }
         self.pointer += 4;
     }
-    
+
     fn opcode_ninety_nine(&mut self) {
         self.status = IntCodeStatus::Halted;
     }
