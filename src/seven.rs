@@ -1,8 +1,13 @@
 use crate::intcode::IntCodeProgram;
 
 pub fn start(input: &str) {
+    without_feedback(input);
+    with_feedback(input);
+
+}
+
+fn without_feedback(input: &str) {
     let mut max_output_signal = 0;
-    let mut max_phase_setting: Vec<u32> = Vec::new();
     let mut permutations: Vec<Vec<u32>> = Vec::new();
     heaps_algo(5, &mut [0, 1, 2, 3, 4], &mut permutations);
 
@@ -10,12 +15,25 @@ pub fn start(input: &str) {
         let current_output_signal = run_amplifiers(input, &current_phase_setting);
         if current_output_signal > max_output_signal {
             max_output_signal = current_output_signal;
-            max_phase_setting = current_phase_setting.clone();
         }
     }
 
     println!("Max output signal: {}", max_output_signal);
-    println!("Max phase setting: {:?}", max_phase_setting);
+}
+
+fn with_feedback(input: &str) {
+    let mut max_output_signal = 0;
+    let mut permutations: Vec<Vec<u32>> = Vec::new();
+    heaps_algo(5, &mut [5, 6, 7, 8, 9], &mut permutations);
+
+    for current_phase_setting in permutations.iter() {
+        let current_output_signal = run_amplifiers(input, &current_phase_setting);
+        if current_output_signal > max_output_signal {
+            max_output_signal = current_output_signal;
+        }
+    }
+
+    println!("Max output signal: {}", max_output_signal);
 }
 
 fn heaps_algo(k: u8, a: &mut [u32], v: &mut Vec<Vec<u32>>) {
