@@ -62,7 +62,7 @@ impl IntCodeProgram {
     }
 
     fn opcode_three(&mut self, idx: &mut usize, one: usize) {
-        self.program[one] = *self.in_buf.first().unwrap();
+        self.program[one] = self.in_buf.remove(0);
         *idx += 2;
     }
 
