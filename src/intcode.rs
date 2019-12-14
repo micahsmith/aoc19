@@ -1,16 +1,22 @@
 #[derive(Clone, Debug)]
 pub struct IntCodeProgram {
-    pause: bool,
     program: Vec<i32>,
     pointer: usize,
     pub in_buf: Vec<i32>,
     pub out_buf: Vec<i32>,
+    pub status: IntCodeStatus,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum IntCodeStatus {
+    Paused,
+    Halted,
+    Ready,
 }
 
 impl IntCodeProgram {
     pub fn from_input(input: &str) -> IntCodeProgram {
         IntCodeProgram {
-            pause: false,
             program: input
                 .trim()
                 .split(',')
@@ -19,6 +25,7 @@ impl IntCodeProgram {
                 })
                 .collect(),
             pointer: 0,
+            status: IntCodeStatus::Ready,
             in_buf: Vec::new(),
             out_buf: Vec::new(),
         }
@@ -33,7 +40,7 @@ impl IntCodeProgram {
     }
 
     pub fn run(&mut self) {
-        while self.pause != true {
+        while self.status == IntCodeStatus::Ready {
             let (opcode, p_one, p_two, p_three) = self.get_opcode_and_parameters();
             match opcode {
                 1 => self.opcode_one(p_one, p_two, p_three),
@@ -44,7 +51,7 @@ impl IntCodeProgram {
                 6 => self.opcode_six(p_one, p_two),
                 7 => self.opcode_seven(p_one, p_two, p_three),
                 8 => self.opcode_eight(p_one, p_two, p_three),
-                99 => break,
+                99 => self.opcode_ninety_nine(),
                 _ => panic!("Unknown opcode: {}", opcode),
             }
         }
@@ -62,7 +69,7 @@ impl IntCodeProgram {
 
     fn opcode_three(&mut self, one: usize) {
         if self.in_buf.get(0) == None {
-            self.pause = true;
+            self.status = IntCodeStatus::Paused;
         } else {
             self.program[one] = self.in_buf.remove(0);
             self.pointer += 2;
@@ -106,6 +113,10 @@ impl IntCodeProgram {
             self.program[three] = 0;
         }
         self.pointer += 4;
+    }
+    
+    fn opcode_ninety_nine(&mut self) {
+        self.status = IntCodeStatus::Halted;
     }
 
     fn get_opcode_and_parameters(&self) -> (i32, usize, usize, usize) {
