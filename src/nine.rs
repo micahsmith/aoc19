@@ -4,7 +4,12 @@ pub fn start(input: &str) {
     let mut program = IntCodeProgram::from_input(input);
     program.in_buf.push(1);
     program.run();
-    println!("{}", program.out_buf.remove(0));
+    println!("Keycode: {}", program.out_buf.remove(0));
+
+    let mut program = IntCodeProgram::from_input(input);
+    program.in_buf.push(2);
+    program.run();
+    println!("Coordinates: {}", program.out_buf.remove(0));
 }
 
 #[cfg(test)]
