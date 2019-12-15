@@ -16,7 +16,7 @@ fn run_without_feedback(input: &str, permutations: Vec<Vec<u32>>) {
         let mut output_signal = 0;
         for amp_phase in phase_setting.iter() {
             let mut amp = IntCodeProgram::from_input(&input);
-            amp.in_buf.push(*amp_phase as i32);
+            amp.in_buf.push(*amp_phase as i64);
             amp.in_buf.push(output_signal);
             amp.run();
             output_signal = amp.out_buf.remove(0);
@@ -59,15 +59,15 @@ fn heaps_algo(k: u8, a: &mut [u32], v: &mut Vec<Vec<u32>>) {
     }
 }
 
-fn feedback(input: &str, phase_setting: &Vec<u32>) -> i32 {
+fn feedback(input: &str, phase_setting: &Vec<u32>) -> i64 {
     let mut amplifiers: Vec<IntCodeProgram> = Vec::new();
     for amp_phase in phase_setting.iter() {
         let mut amp = IntCodeProgram::from_input(&input);
-        amp.in_buf.push(*amp_phase as i32);
+        amp.in_buf.push(*amp_phase as i64);
         amplifiers.push(amp);
     }
 
-    let mut output_signal: i32 = 0;
+    let mut output_signal: i64 = 0;
     loop {
         for amp in amplifiers.iter_mut() {
             amp.in_buf.push(output_signal);

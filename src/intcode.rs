@@ -1,9 +1,12 @@
+use std::usize;
+
 #[derive(Clone, Debug)]
 pub struct IntCodeProgram {
-    program: Vec<i32>,
+    program: Vec<i64>,
     pointer: usize,
-    pub in_buf: Vec<i32>,
-    pub out_buf: Vec<i32>,
+    rel_base: usize,
+    pub in_buf: Vec<i64>,
+    pub out_buf: Vec<i64>,
     pub status: IntCodeStatus,
 }
 
@@ -16,26 +19,29 @@ pub enum IntCodeStatus {
 
 impl IntCodeProgram {
     pub fn from_input(input: &str) -> IntCodeProgram {
+        let mut program: Vec<i64> = input
+            .trim()
+            .split(',')
+            .map(|num| {
+                return num.parse::<i64>().unwrap();
+            })
+            .collect();
+        program.resize(program.len() * 128, 0);
         IntCodeProgram {
-            program: input
-                .trim()
-                .split(',')
-                .map(|num| {
-                    return num.parse::<i32>().unwrap();
-                })
-                .collect(),
+            program: program,
             pointer: 0,
+            rel_base: 0,
             status: IntCodeStatus::Ready,
             in_buf: Vec::new(),
             out_buf: Vec::new(),
         }
     }
 
-    pub fn set_at(&mut self, idx: usize, value: i32) {
+    pub fn set_at(&mut self, idx: usize, value: i64) {
         self.program[idx] = value;
     }
 
-    pub fn get(&self, idx: usize) -> i32 {
+    pub fn get(&self, idx: usize) -> i64 {
         return self.program[idx];
     }
 
@@ -51,6 +57,7 @@ impl IntCodeProgram {
                 6 => self.opcode_six(p_one, p_two),
                 7 => self.opcode_seven(p_one, p_two, p_three),
                 8 => self.opcode_eight(p_one, p_two, p_three),
+                9 => self.opcode_nine(p_one),
                 99 => self.opcode_ninety_nine(),
                 _ => panic!("Unknown opcode: {}", opcode),
             }
@@ -115,11 +122,16 @@ impl IntCodeProgram {
         self.pointer += 4;
     }
 
+    fn opcode_nine(&mut self, one: usize) {
+        self.rel_base = (self.rel_base as i64 + self.program[one]) as usize;
+        self.pointer += 2;
+    }
+
     fn opcode_ninety_nine(&mut self) {
         self.status = IntCodeStatus::Halted;
     }
 
-    fn get_opcode_and_parameters(&self) -> (i32, usize, usize, usize) {
+    fn get_opcode_and_parameters(&self) -> (i64, usize, usize, usize) {
         let mut digits: [u32; 5] = [0; 5];
         let oc_str = self.program[self.pointer].to_string();
 
@@ -130,7 +142,7 @@ impl IntCodeProgram {
         }
 
         return (
-            (digits[0] + digits[1] * 10) as i32,
+            (digits[0] + digits[1] * 10) as i64,
             self.get_index_from_mode(digits[2], self.pointer + 1),
             self.get_index_from_mode(digits[3], self.pointer + 2),
             self.get_index_from_mode(digits[4], self.pointer + 3),
@@ -146,6 +158,12 @@ impl IntCodeProgram {
                 return 0 as usize;
             }
             1 => return idx,
+            2 => {
+                if let Some(v) = self.program.get(idx) {
+                    return (self.rel_base as i64 + *v) as usize;
+                }
+                return 0 as usize;
+            }
             _ => panic!("Unknown parameter mode: {}", mode),
         }
     }
