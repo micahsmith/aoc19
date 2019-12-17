@@ -1,52 +1,154 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
-type Coordinate = (usize, usize);
-type Direction = (i32, i32);
-
-pub fn start(input: &str) {
-    let mut map = generate_map(input);
-    process_map(&mut map);
-    // println!("{:?}", map);
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+struct Point {
+    pub x: usize,
+    pub y: usize,
 }
 
-fn generate_map(input: &str) -> HashMap<Coordinate, i32> {
-    let mut map: HashMap<Coordinate, i32> = HashMap::new();
+impl Point {
+    fn new(x: usize, y: usize) -> Point {
+        return Point { x, y };
+    }
+
+    fn add(&self, v: &Vector) -> Point {
+        return Point {
+            x: (self.x as i32 + v.x) as usize,
+            y: (self.y as i32 + v.y) as usize,
+        };
+    }
+}
+
+#[derive(Debug)]
+struct Vector {
+    x: i32,
+    y: i32,
+}
+
+impl Vector {
+    fn new(one: &Point, two: &Point) -> Option<Vector> {
+        let x = one.x as i32 - two.x as i32;
+        let y = one.y as i32 - two.y as i32;
+
+        if x == 0 {
+            return Some(Vector {
+                x: x,
+                y: if y.is_negative() { 1 } else { -1 },
+            });
+        }
+        if y == 0 {
+            return Some(Vector {
+                x: if x.is_negative() { 1 } else { -1 },
+                y: y,
+            });
+        }
+        if x % y == 0 {
+            return Some(Vector {
+                x: -x / y.abs(),
+                y: -y / y.abs(),
+            });
+        }
+        if y % x == 0 {
+            return Some(Vector {
+                x: -x / x.abs(),
+                y: -y / x.abs(),
+            });
+        }
+
+        return None;
+    }
+}
+
+pub fn start(input: &str) {
+    let set = generate_map(input);
+    let max = process_map(&set);
+    println!("Maximum: {}", max);
+}
+
+fn generate_map(input: &str) -> HashSet<Point> {
+    let mut set: HashSet<Point> = HashSet::new();
 
     for (i, row) in input.trim().split("\n").enumerate() {
         for (j, c) in row.chars().enumerate() {
             if c == '#' {
-                map.insert((j, i), 0);
+                set.insert(Point::new(j, i));
             }
         }
     }
 
-    return map;
+    return set;
 }
 
-fn process_map(map: &mut HashMap<Coordinate, i32>) {
-    for spotter in map.keys() {
-        for spottee in map.keys() {
-            println!("Spotter: {:?}, Spottee: {:?}", spotter, spottee);
-            let x_diff = spotter.0 as i32 - spottee.0 as i32;
-            let y_diff = spotter.1 as i32 - spottee.1 as i32;
-            println!("XDiff: {:?}, YDiff: {:?}", x_diff, y_diff);
+fn process_map(set: &HashSet<Point>) -> i32 {
+    let mut max = 0;
 
-            if should_check_path(x_diff, y_diff) {
-                println!("yes");
+    for spotter in set.iter() {
+        let mut spottable = 0;
+        for spottee in set.iter() {
+            if spotter == spottee {
+                continue;
+            } else if is_spottable(set, spotter, spottee) {
+                spottable += 1;
             }
+        }
+
+        if spottable > max {
+            max = spottable;
+        }
+    }
+
+    return max;
+}
+
+fn is_spottable(set: &HashSet<Point>, spotter: &Point, spottee: &Point) -> bool {
+    println!("Spotter: {:?}, Spottee: {:?}", spotter, spottee);
+    match Vector::new(spotter, spottee) {
+        Some(v) => {
+            println!("Vector: {:?}", v);
+            let mut check_point = spotter.add(&v);
+            loop {
+                println!("Check point: {:?}", check_point);
+                if spottee == &check_point {
+                    println!("Can be seen!");
+                    return true;
+                } else if let Some(_) = set.get(&check_point) {
+                    println!("Blocked!");
+                    return false;
+                } else {
+                    check_point = check_point.add(&v);
+                }
+            }
+        }
+        None => {
+            return true;
         }
     }
 }
 
-fn should_check_path(x_diff: i32, y_diff: i32) -> Option<Direction> {
-    if x_diff == 0 && y_diff == 0 {
-        return false;
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_one() {
+        let input = ".#..#\n.....\n#####\n....#\n...##";
+        let set = generate_map(input);
+        assert_eq!(process_map(&set), 8);
     }
-    if x_diff == 0 || y_diff == 0 {
-        return true;
+
+    #[test]
+    fn test_two() {
+        let input = "......#.#.\n#..#.#....\n..#######.\n.#.#.###..\n.#..#.....\n\
+                     ..#....#.#\n#..#....#.\n.##.#..###\n##...#..#.\n.#....####";
+        let set = generate_map(input);
+        assert_eq!(process_map(&set), 33);
     }
-    if x_diff % y_diff == 0 || y_diff % x_diff == 0 {
-        return true;
+
+    #[test]
+    fn test_three() {
+        let input = "#.#...#.#.\n.###....#.\n.#....#...\n##.#.#.#.#\n....#.#.#.\n\
+                     .##..###.#\n..#...##..\n..##....##\n......#...\n.####.###.";
+        let set = generate_map(input);
+        assert_eq!(process_map(&set), 35);
     }
-    return false;
 }
