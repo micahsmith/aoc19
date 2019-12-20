@@ -26,43 +26,34 @@ struct Vector {
 }
 
 impl Vector {
-    fn new(one: &Point, two: &Point) -> Option<Vector> {
+    fn new(one: &Point, two: &Point) -> Vector {
         let x = one.x as i32 - two.x as i32;
         let y = one.y as i32 - two.y as i32;
 
-        if x == 0 {
-            return Some(Vector {
-                x: x,
-                y: if y.is_negative() { 1 } else { -1 },
-            });
-        }
-        if y == 0 {
-            return Some(Vector {
-                x: if x.is_negative() { 1 } else { -1 },
-                y: y,
-            });
-        }
-        if x % y == 0 {
-            return Some(Vector {
-                x: -x / y.abs(),
-                y: -y / y.abs(),
-            });
-        }
-        if y % x == 0 {
-            return Some(Vector {
-                x: -x / x.abs(),
-                y: -y / x.abs(),
-            });
-        }
+        let divisor = -Vector::gcd(x.abs(), y.abs());
 
-        return None;
+        return Vector {
+            x: x / divisor,
+            y: y / divisor,
+        };
+    }
+
+    fn gcd(one: i32, two: i32) -> i32 {
+        println!("{} and {}", one, two);
+        if two == 0 {
+            return one;
+        }
+        return Vector::gcd(two, one - (two * (one / two)));
     }
 }
 
 pub fn start(input: &str) {
     let set = generate_map(input);
-    let max = process_map(&set);
-    println!("Maximum: {}", max);
+    let (max, max_point) = process_map(&set);
+
+    println!("Maximum spottable: {}", max);
+
+
 }
 
 fn generate_map(input: &str) -> HashSet<Point> {
@@ -79,8 +70,9 @@ fn generate_map(input: &str) -> HashSet<Point> {
     return set;
 }
 
-fn process_map(set: &HashSet<Point>) -> i32 {
+fn process_map(set: &HashSet<Point>) -> (i32, Point) {
     let mut max = 0;
+    let mut max_point: Point = Point::new(0, 0);
 
     for spotter in set.iter() {
         let mut spottable = 0;
@@ -94,34 +86,24 @@ fn process_map(set: &HashSet<Point>) -> i32 {
 
         if spottable > max {
             max = spottable;
+            max_point = *spotter;
         }
     }
 
-    return max;
+    return (max, max_point);
 }
 
 fn is_spottable(set: &HashSet<Point>, spotter: &Point, spottee: &Point) -> bool {
-    println!("Spotter: {:?}, Spottee: {:?}", spotter, spottee);
-    match Vector::new(spotter, spottee) {
-        Some(v) => {
-            println!("Vector: {:?}", v);
-            let mut check_point = spotter.add(&v);
-            loop {
-                println!("Check point: {:?}", check_point);
-                if spottee == &check_point {
-                    println!("Can be seen!");
-                    return true;
-                } else if let Some(_) = set.get(&check_point) {
-                    println!("Blocked!");
-                    return false;
-                } else {
-                    check_point = check_point.add(&v);
-                }
-            }
-        }
-        None => {
+    let v = Vector::new(spotter, spottee);
+    let mut check_point = spotter.add(&v);
+    loop {
+        if spottee == &check_point {
             return true;
         }
+        if let Some(_) = set.get(&check_point) {
+            return false;
+        }
+        check_point = check_point.add(&v);
     }
 }
 
@@ -131,24 +113,44 @@ mod tests {
 
     #[test]
     fn test_one() {
-        let input = ".#..#\n.....\n#####\n....#\n...##";
+        let input = "#####\n.....\n.####\n....#\n...##";
         let set = generate_map(input);
-        assert_eq!(process_map(&set), 8);
+        let (max, _) = process_map(&set);
+        assert_eq!(max, 10);
     }
 
     #[test]
     fn test_two() {
-        let input = "......#.#.\n#..#.#....\n..#######.\n.#.#.###..\n.#..#.....\n\
-                     ..#....#.#\n#..#....#.\n.##.#..###\n##...#..#.\n.#....####";
+        let input = ".#..#\n.....\n#####\n....#\n...##";
         let set = generate_map(input);
-        assert_eq!(process_map(&set), 33);
+        let (max, _) = process_map(&set);
+        assert_eq!(max, 8);
     }
 
     #[test]
     fn test_three() {
+        let input = "......#.#.\n#..#.#....\n..#######.\n.#.#.###..\n.#..#.....\n\
+                     ..#....#.#\n#..#....#.\n.##.#..###\n##...#..#.\n.#....####";
+        let set = generate_map(input);
+        let (max, _) = process_map(&set);
+        assert_eq!(max, 33);
+    }
+
+    #[test]
+    fn test_four() {
         let input = "#.#...#.#.\n.###....#.\n.#....#...\n##.#.#.#.#\n....#.#.#.\n\
                      .##..###.#\n..#...##..\n..##....##\n......#...\n.####.###.";
         let set = generate_map(input);
-        assert_eq!(process_map(&set), 35);
+        let (max, _) = process_map(&set);
+        assert_eq!(max, 35);
+    }
+
+    #[test]
+    fn test_five() {
+        let input = ".#..#..###\n####.###.#\n....###.#.\n..###.##.#\n##.##.#.#.\n\
+                     ....###..#\n..#.#..#.#\n#..#.#.###\n.##...##.#\n.....#.#..";
+        let set = generate_map(input);
+        let (max, _) = process_map(&set);
+        assert_eq!(max, 41);
     }
 }
