@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashSet;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
@@ -19,7 +20,15 @@ impl Point {
     }
 }
 
-#[derive(Debug)]
+#[derive(Eq, PartialEq, PartialOrd, Ord)]
+enum Quadrant {
+    One,
+    Two,
+    Three,
+    Four,
+}
+
+#[derive(Debug, Eq, PartialEq)]
 struct Vector {
     x: i32,
     y: i32,
@@ -39,11 +48,63 @@ impl Vector {
     }
 
     fn gcd(one: i32, two: i32) -> i32 {
-        println!("{} and {}", one, two);
         if two == 0 {
             return one;
         }
         return Vector::gcd(two, one - (two * (one / two)));
+    }
+
+    fn get_quadrant(&self) -> Quadrant {
+        if self.x >= 0 && self.y < 0 {
+            return Quadrant::One;
+        }
+        if self.x >= 0 && self.y >= 0 {
+            return Quadrant::Two;
+        }
+        if self.x < 0 && self.y >= 0 {
+            return Quadrant::Three;
+        }
+        if self.x < 0 && self.y < 0 {
+            return Quadrant::Four;
+        }
+        panic!("Unknown quadrant");
+    }
+
+    fn cmp_quadrant(&self, other: &Vector) -> Ordering {
+        return self.get_quadrant().cmp(&other.get_quadrant());
+    }
+
+    fn std_ordering(&self, other: &Vector) -> Ordering {
+        let s = (self.x as f32 / self.y as f32).abs();
+        let o = (other.x as f32 / other.y as f32).abs();
+        if s < o {
+            return Ordering::Less;
+        }
+        if s > o {
+            return Ordering::Greater;
+        } 
+        return Ordering::Equal;
+    }
+}
+
+impl Ord for Vector {
+    fn cmp(&self, other: &Vector) -> Ordering {
+        match self.cmp_quadrant(&other) {
+            Ordering::Less => Ordering::Less,
+            Ordering::Greater => Ordering::Greater,
+            Ordering::Equal => match self.get_quadrant() {
+                Quadrant::One => self.std_ordering(&other),
+                Quadrant::Two => self.std_ordering(&other),
+                Quadrant::Three => self.std_ordering(&other).reverse(), 
+                Quadrant::Four => self.std_ordering(&other).reverse(),
+            },
+        }
+    }
+}
+
+impl PartialOrd for Vector {
+    fn partial_cmp(&self, other: &Vector) -> Option<Ordering> {
+        return Some(self.cmp(other));
     }
 }
 
@@ -53,7 +114,8 @@ pub fn start(input: &str) {
 
     println!("Maximum spottable: {}", max);
 
-
+    let vectors = generate_vectors(&set, &max_point);
+    println!("Vectors: {:?}", vectors);
 }
 
 fn generate_map(input: &str) -> HashSet<Point> {
@@ -105,6 +167,21 @@ fn is_spottable(set: &HashSet<Point>, spotter: &Point, spottee: &Point) -> bool 
         }
         check_point = check_point.add(&v);
     }
+}
+
+fn generate_vectors(set: &HashSet<Point>, station: &Point) -> Vec<Vector> {
+    let mut vectors = Vec::new();
+
+    for asteroid in set.iter() {
+        if station == asteroid {
+            continue;
+        } else {
+            vectors.push(Vector::new(station, asteroid));
+        }
+    }
+
+    vectors.sort();
+    return vectors;
 }
 
 #[cfg(test)]
