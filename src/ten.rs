@@ -28,7 +28,7 @@ enum Quadrant {
     Four,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 struct Vector {
     x: i32,
     y: i32,
@@ -74,7 +74,7 @@ impl Vector {
         return self.get_quadrant().cmp(&other.get_quadrant());
     }
 
-    fn std_ordering(&self, other: &Vector) -> Ordering {
+    fn get_ordering(&self, other: &Vector) -> Ordering {
         let s = (self.x as f32 / self.y as f32).abs();
         let o = (other.x as f32 / other.y as f32).abs();
         if s < o {
@@ -82,7 +82,7 @@ impl Vector {
         }
         if s > o {
             return Ordering::Greater;
-        } 
+        }
         return Ordering::Equal;
     }
 }
@@ -93,10 +93,8 @@ impl Ord for Vector {
             Ordering::Less => Ordering::Less,
             Ordering::Greater => Ordering::Greater,
             Ordering::Equal => match self.get_quadrant() {
-                Quadrant::One => self.std_ordering(&other),
-                Quadrant::Two => self.std_ordering(&other),
-                Quadrant::Three => self.std_ordering(&other).reverse(), 
-                Quadrant::Four => self.std_ordering(&other).reverse(),
+                Quadrant::One | Quadrant::Two => self.get_ordering(&other),
+                Quadrant::Three | Quadrant::Four => self.get_ordering(&other).reverse(),
             },
         }
     }
@@ -115,7 +113,7 @@ pub fn start(input: &str) {
     println!("Maximum spottable: {}", max);
 
     let vectors = generate_vectors(&set, &max_point);
-    println!("Vectors: {:?}", vectors);
+    engage_lasers(&set, &vectors, &max_point);
 }
 
 fn generate_map(input: &str) -> HashSet<Point> {
@@ -182,6 +180,49 @@ fn generate_vectors(set: &HashSet<Point>, station: &Point) -> Vec<Vector> {
 
     vectors.sort();
     return vectors;
+}
+
+fn engage_lasers(set: &HashSet<Point>, vectors: &Vec<Vector>, station: &Point) {
+    let mut field = set.clone();
+    let mut destroyed: Vec<Vec<Point>> = Vec::new();
+
+    let mut prev_counter = 0;
+    let mut prev_vector: Vector = vectors.last().unwrap().clone();
+    for vector in vectors.iter() {
+        if vector == &prev_vector {
+            prev_counter += 1;
+        } else {
+            prev_counter = 0;
+        }
+
+        let point = get_first_by_vector(set, station, vector);
+        field.remove(&point);
+        if let Some(v) = destroyed.get_mut(prev_counter) {
+            v.push(point);
+        } else {
+            destroyed.push(Vec::new());
+            destroyed[prev_counter].push(point);
+        }
+
+        prev_vector = *vector;
+    }
+
+    let flattened: Vec<Point> = destroyed.into_iter().flatten().collect();
+    let two_hundredth = flattened[199];
+    println!(
+        "Coordinates 200th: {}",
+        two_hundredth.x * 100 + two_hundredth.y
+    );
+}
+
+fn get_first_by_vector(set: &HashSet<Point>, station: &Point, vector: &Vector) -> Point {
+    let mut check_point = station.add(&vector);
+    loop {
+        if let Some(p) = set.get(&check_point) {
+            return p.clone();
+        }
+        check_point = check_point.add(&vector);
+    }
 }
 
 #[cfg(test)]
