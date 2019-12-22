@@ -46,6 +46,8 @@ impl IntCodeProgram {
     }
 
     pub fn run(&mut self) {
+        self.status = IntCodeStatus::Ready;
+
         while self.status == IntCodeStatus::Ready {
             let (opcode, p_one, p_two, p_three) = self.get_opcode_and_parameters();
             match opcode {
