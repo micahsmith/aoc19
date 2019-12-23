@@ -45,7 +45,7 @@ fn call_from_str(s: &str) {
         "nine" => nine::start(&get_input("inputs/nine")),
         "ten" => ten::start(&get_input("inputs/ten")),
         "eleven" => eleven::start(&get_input("inputs/eleven")),
-        "twelve" => twelve::start(&get_input("inputs/twelve")),
+        "twelve" => twelve::start(),
         "thirteen" => thirteen::start(&get_input("inputs/thirteen")),
         "fourteen" => fourteen::start(&get_input("inputs/fourteen")),
         "fifteen" => fifteen::start(&get_input("inputs/fifteen")),
