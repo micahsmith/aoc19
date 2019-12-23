@@ -129,24 +129,59 @@ fn run_robot(program: &mut IntCodeProgram, robot: &mut Robot, hull: &mut HashMap
 }
 
 fn render(hull: &HashMap<Point, u8>) {
-    let mut x_max = 0;
-    let mut x_min = 0;
-    let mut y_max = 0;
-    let mut y_min = 0;
+    let mut canvas = get_canvas_from_points(hull);
+    let y_offset = canvas.len() / 2;
+    let x_offset = canvas.first().unwrap().len() / 2;
 
-    for p in hull.keys() {
-        if p.x > x_max {
-            x_max = p.x;
-        } else if p.x < x_min {
-            x_min = p.x;
+    for (point, color) in hull.iter() {
+        let y_idx = (y_offset as i32 - point.y) as usize;
+        let x_idx = (point.x + x_offset as i32) as usize;
+        canvas[y_idx][x_idx] = *color;
+    }
+
+    print_canvas(&canvas);
+}
+
+fn get_canvas_from_points(hull: &HashMap<Point, u8>) -> Vec<Vec<u8>> {
+    let mut canvas = Vec::new();
+
+    let mut x_offset = 0;
+    let mut y_offset = 0;
+
+    for point in hull.keys() {
+        if point.x.abs() > x_offset {
+            x_offset = point.x.abs();
         }
-
-        if p.y > y_max {
-            y_max = p.y;
-        } else if p.y < y_min {
-            y_min = p.y;
+        if point.y.abs() > y_offset {
+            y_offset = point.y.abs();
         }
     }
 
-    let mut canvas = Vec::new();
+    let col_count = x_offset * 2 + 1;
+    let row_count = y_offset * 2 + 1;
+
+    for _ in 0..row_count {
+        let mut row = Vec::new();
+        row.resize((col_count) as usize, 0);
+        canvas.push(row);
+    }
+
+    return canvas;
+}
+
+fn print_canvas(canvas: &Vec<Vec<u8>>) {
+    let mut message = String::new();
+    for row in canvas.iter() {
+        for value in row.iter() {
+            if *value == 0 {
+                message.push(' ');
+            } else {
+                message.push('X');
+            }
+        }
+        message.push('\n');
+    }
+
+    println!("Registration identifer:");
+    println!("{}", message);
 }
