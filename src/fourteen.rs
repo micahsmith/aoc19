@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -41,7 +42,8 @@ pub fn start(input: &str) {
     let ore_count = ore_for_fuel(&formulae, vec![Order::from_str("1 FUEL")]);
     println!("Ore required: {}", ore_count);
 
-    let max_fuel = bin_search(&formulae, 1_000_000_000_000);
+    let trillion = 1_000_000_000_000;
+    let max_fuel = bin_search(&formulae, trillion, 1, trillion);
     println!("Max fuel: {}", max_fuel);
 }
 
@@ -101,9 +103,23 @@ fn get_multiplier(order_quantity: &u64, output_quantity: &u64, prepared: &u64) -
     return ((*order_quantity as f64 - *prepared as f64) / *output_quantity as f64).ceil() as u64;
 }
 
-fn bin_search(formulae: &HashMap<String, Formula>, ore_count: u64) -> u64 {
+fn bin_search(
+    formulae: &HashMap<String, Formula>,
+    max_ore: u64,
+    mut lower: u64,
+    mut upper: u64,
+) -> u64 {
     loop {
-        return 0;
+        if lower > upper {
+            return upper;
+        }
+        let m = (lower + upper) / 2;
+        let ore_count = ore_for_fuel(&formulae, vec![Order::from_str(&format!("{} FUEL", m))]);
+        match ore_count.cmp(&max_ore) {
+            Ordering::Less => lower = m + 1,
+            Ordering::Greater => upper = m - 1,
+            Ordering::Equal => return m,
+        }
     }
 }
 
