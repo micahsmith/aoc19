@@ -3,7 +3,7 @@ use std::collections::HashMap;
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 struct Order {
     kind: String,
-    quantity: u32,
+    quantity: u64,
 }
 
 impl Order {
@@ -38,8 +38,11 @@ impl Formula {
 
 pub fn start(input: &str) {
     let formulae = parse_input(&input);
-    let ore_count = ore_for_fuel(&formulae);
+    let ore_count = ore_for_fuel(&formulae, vec![Order::from_str("1 FUEL")]);
     println!("Ore required: {}", ore_count);
+
+    let max_fuel = bin_search(&formulae, 1_000_000_000_000);
+    println!("Max fuel: {}", max_fuel);
 }
 
 fn parse_input(input: &str) -> HashMap<String, Formula> {
@@ -58,9 +61,7 @@ fn parse_input(input: &str) -> HashMap<String, Formula> {
     return formulae;
 }
 
-fn ore_for_fuel(formulae: &HashMap<String, Formula>) -> u32 {
-    let mut queue = Vec::new();
-    queue.push(Order::from_str("1 FUEL"));
+fn ore_for_fuel(formulae: &HashMap<String, Formula>, mut queue: Vec<Order>) -> u64 {
     let mut reserves = HashMap::new();
 
     loop {
@@ -74,25 +75,36 @@ fn ore_for_fuel(formulae: &HashMap<String, Formula>) -> u32 {
         if order.kind == "ORE" {
             *resource_count += order.quantity;
         } else {
-            let mut quantity_produced = 0;
-            if *resource_count > 0 {
-                quantity_produced = *resource_count;
-                *resource_count = 0;
-            }
+            let mut prepared = *resource_count;
+            *resource_count = 0;
 
-            while order.quantity > quantity_produced {
-                let formula = formulae.get(&order.kind).unwrap();
-                formula.input.iter().for_each(|kq| queue.push(kq.clone()));
-                quantity_produced += formula.output.quantity;
-            }
+            let formula = formulae.get(&order.kind).unwrap();
+            let multiplier = get_multiplier(&order.quantity, &formula.output.quantity, &prepared);
 
-            if quantity_produced > order.quantity {
-                *resource_count = quantity_produced - order.quantity;
+            formula.input.iter().for_each(|kq| {
+                let mut clone = kq.clone();
+                clone.quantity *= multiplier;
+                queue.push(clone);
+            });
+
+            prepared += formula.output.quantity * multiplier;
+            if prepared > order.quantity {
+                *resource_count = prepared - order.quantity;
             }
         }
     }
 
     return *reserves.get("ORE").unwrap();
+}
+
+fn get_multiplier(order_quantity: &u64, output_quantity: &u64, prepared: &u64) -> u64 {
+    return ((*order_quantity as f64 - *prepared as f64) / *output_quantity as f64).ceil() as u64;
+}
+
+fn bin_search(formulae: &HashMap<String, Formula>, ore_count: u64) -> u64 {
+    loop {
+        return 0;
+    }
 }
 
 #[cfg(test)]
@@ -105,7 +117,7 @@ mod tests {
                      5 B, 7 C => 1 BC\n4 C, 1 A => 1 CA\n2 AB, 3 BC, 4 CA => 1 FUEL";
 
         let formulae = parse_input(&input);
-        let ore_count = ore_for_fuel(&formulae);
+        let ore_count = ore_for_fuel(&formulae, vec![Order::from_str("1 FUEL")]);
 
         assert_eq!(165, ore_count);
     }
@@ -119,7 +131,7 @@ mod tests {
                      3 DCFZ, 7 NZVS, 5 HKGWZ, 10 PSHF => 8 KHKGT";
 
         let formulae = parse_input(&input);
-        let ore_count = ore_for_fuel(&formulae);
+        let ore_count = ore_for_fuel(&formulae, vec![Order::from_str("1 FUEL")]);
 
         assert_eq!(13312, ore_count);
     }
