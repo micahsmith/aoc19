@@ -80,6 +80,9 @@ pub fn start(input: &str) {
     let (ox_sys, _) = map.iter().find(|(_, v)| **v == DroidStatus::OxSys).unwrap();
     let dist = a_star(&map, &[0, 0], &ox_sys);
     println!("Fewest movements: {}", dist);
+
+    let iters = flood_fill(&map, &ox_sys);
+    println!("Oxygen fill in min: {}", iters);
 }
 
 fn droid_loop(program: &mut IntCodeProgram) -> Map {
@@ -233,6 +236,30 @@ fn get_neighbors(map: &Map, point: &Point) -> Vec<Point> {
     }
 
     return neighbors;
+}
+
+fn flood_fill(map: &Map, ox_sys: &Point) -> usize {
+    let mut map = map.clone();
+    let mut minutes = 0;
+    let mut next = vec![ox_sys.clone()];
+
+    loop {
+        if next.len() == 0 {
+            break;
+        }
+
+        let mut current = Vec::new();
+        current.append(&mut next);
+        minutes += 1;
+
+        while let Some(point) = current.pop() {
+            map.insert(point, DroidStatus::Wall);
+            let mut neighbors = get_neighbors(&map, &point);
+            next.append(&mut neighbors);
+        }
+    }
+
+    return minutes - 1;
 }
 
 #[allow(dead_code)]
