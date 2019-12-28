@@ -1,5 +1,6 @@
 use crate::intcode::IntCodeProgram;
 use std::collections::HashMap;
+use std::{thread, time, usize};
 
 #[derive(Clone, Debug)]
 enum DroidMovement {
@@ -76,7 +77,9 @@ type Map = HashMap<Point, DroidStatus>;
 pub fn start(input: &str) {
     let mut program = IntCodeProgram::from_input(&input);
     let map = droid_loop(&mut program);
-    println!("Fewest movements: {:?}", map);
+    let (ox_sys, _) = map.iter().find(|(_, v)| **v == DroidStatus::OxSys).unwrap();
+    let dist = a_star(&map, &[0, 0], &ox_sys);
+    println!("Fewest movements: {}", dist);
 }
 
 fn droid_loop(program: &mut IntCodeProgram) -> Map {
@@ -89,6 +92,7 @@ fn droid_loop(program: &mut IntCodeProgram) -> Map {
     map.insert(pos, DroidStatus::Blank);
 
     loop {
+        //print_map(&map);
         program.in_buf.push(movement.get_instr());
         program.run();
         status = DroidStatus::from_status_code(program.out_buf.remove(0));
@@ -97,6 +101,7 @@ fn droid_loop(program: &mut IntCodeProgram) -> Map {
         match status {
             DroidStatus::Wall => {
                 map.insert(add_points(&pos, &direction), DroidStatus::Wall);
+                breadcrumbs.pop();
             }
             DroidStatus::Blank => {
                 map.insert(add_points(&pos, &direction), DroidStatus::Blank);
@@ -109,10 +114,11 @@ fn droid_loop(program: &mut IntCodeProgram) -> Map {
         }
 
         if let Some(dir) = find_unexplored(&map, &pos) {
-            movement = dir;
-            breadcrumbs.push(movement.rev());
+            movement = dir.clone();
+            breadcrumbs.push(dir.rev());
         } else if breadcrumbs.len() > 0 {
-            movement = breadcrumbs.pop().unwrap();
+            let bc = breadcrumbs.pop().unwrap();
+            movement = bc;
         } else {
             break;
         }
@@ -141,4 +147,114 @@ fn find_unexplored(map: &Map, pos: &Point) -> Option<DroidMovement> {
         return Some(DroidMovement::from_direction(*p));
     }
     return None;
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PointNode {
+    point: Point,
+    priority: usize,
+}
+
+impl PointNode {
+    fn new(point: Point, priority: usize) -> PointNode {
+        return PointNode {
+            point: point,
+            priority: priority,
+        };
+    }
+}
+
+fn a_star(map: &Map, src: &Point, tar: &Point) -> usize {
+    let mut children: HashMap<Point, Point> = HashMap::new();
+    let mut g_scores: HashMap<Point, usize> = HashMap::new();
+    let mut f_scores: HashMap<Point, usize> = HashMap::new();
+    let mut pq = Vec::new();
+
+    g_scores.insert(src.clone(), 0);
+    f_scores.insert(src.clone(), heuristic(src, tar));
+    pq.push(PointNode::new(src.clone(), 0));
+
+    while let Some(mut current_node) = pq.pop() {
+        if current_node.point == *tar {
+            let mut path = vec![current_node.point];
+            while let Some(parent) = children.get(&current_node.point) {
+                path.insert(0, *parent);
+                current_node = PointNode::new(*parent, 0);
+            }
+            return path.len();
+        }
+
+        let neighbors = get_neighbors(&map, &current_node.point);
+        for neighbor in neighbors.iter() {
+            let tent_g_score = g_scores.get(&current_node.point).unwrap() + 1;
+            let neighbor_g_score = g_scores.entry(*neighbor).or_insert(usize::MAX);
+
+            if tent_g_score < *neighbor_g_score {
+                children.insert(neighbor.clone(), current_node.point.clone());
+                g_scores.insert(neighbor.clone(), tent_g_score);
+
+                let f_score = tent_g_score + heuristic(neighbor, tar);
+                f_scores.insert(neighbor.clone(), f_score);
+
+                let new_node = PointNode::new(*neighbor, f_score);
+                if !pq.contains(&new_node) {
+                    pq.push(new_node);
+                }
+            }
+        }
+
+        pq.sort_by(|a, b| a.priority.cmp(&b.priority));
+    }
+
+    return 0;
+}
+
+fn heuristic(src: &Point, tar: &Point) -> usize {
+    return ((src[0] - tar[0]) + (src[1] - tar[1])).abs() as usize;
+}
+
+fn get_neighbors(map: &Map, point: &Point) -> Vec<Point> {
+    let directions = [
+        DroidMovement::North,
+        DroidMovement::South,
+        DroidMovement::West,
+        DroidMovement::East,
+    ];
+
+    let mut neighbors = Vec::new();
+
+    for dir in directions.iter() {
+        let point = add_points(point, &dir.get_direction());
+        if let Some(status) = map.get(&point) {
+            if *status != DroidStatus::Wall {
+                neighbors.push(point.clone());
+            }
+        }
+    }
+
+    return neighbors;
+}
+
+#[allow(dead_code)]
+fn print_map(map: &Map) {
+    let mut screen = String::new();
+    for row_num in -28..28 {
+        let mut row = String::new();
+        for col_num in -30..30 {
+            if let Some(o) = map.get(&[col_num, row_num]) {
+                match o {
+                    DroidStatus::Wall => row.push_str("█"),
+                    DroidStatus::Blank => row.push_str("░"),
+                    DroidStatus::OxSys => row.push_str("O"),
+                }
+            } else {
+                row.push_str("▒");
+            }
+        }
+        screen.push_str(&row);
+        screen.push_str("\n");
+    }
+
+    println!("{}", screen);
+    thread::sleep(time::Duration::from_millis(20));
 }
