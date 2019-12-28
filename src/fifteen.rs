@@ -181,7 +181,7 @@ fn a_star(map: &Map, src: &Point, tar: &Point) -> usize {
                 path.insert(0, *parent);
                 current_node = PointNode::new(*parent, 0);
             }
-            return path.len();
+            return path.len() - 1;
         }
 
         let neighbors = get_neighbors(&map, &current_node.point);
