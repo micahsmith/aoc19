@@ -2,6 +2,10 @@ pub fn start(input: &str) {
     let parsed = parse(input);
     let result = run_fft(&parsed, 100);
     println!("First eight digits: {}", &result[..8]);
+
+    let parsed = parse(input);
+    let result = run_fft(&repeat(&parsed, 10_000), 100);
+    println!("First eight digits: {}", &result[..8]);
 }
 
 fn parse(input: &str) -> Vec<i32> {
@@ -16,7 +20,8 @@ fn run_fft(input: &Vec<i32>, iters: usize) -> String {
     let mut current: Vec<i32> = input.clone();
     let mut next: Vec<i32> = Vec::new();
 
-    for _ in 0..iters {
+    for n in 0..iters {
+        println!("{}", n);
         for (i, _) in current.iter().enumerate() {
             next.push(get_value_for_pos(&current, i));
         }
@@ -58,6 +63,14 @@ fn build_pattern(length: usize, pos: usize) -> Vec<i32> {
     pattern.remove(0);
     pattern.truncate(length + 1);
     return pattern;
+}
+
+fn repeat(v: &Vec<i32>, times: usize) -> Vec<i32> {
+    let mut new_vec = Vec::new();
+    for i in 0..times {
+        new_vec.append(&mut v.clone());
+    }
+    return new_vec;
 }
 
 #[cfg(test)]
